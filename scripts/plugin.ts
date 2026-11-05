@@ -47,8 +47,10 @@ import { descendantProcesses, windowsArgv, windowsProcessTable } from "../server
  */
 const ENV_FILES = ["env", ".env"];
 const ROOT = resolve(process.env["HERDR_PLUGIN_ROOT"] ?? join(import.meta.dir, ".."));
-/** the dir under its Ovis name, or under the name before the rename while only that one exists */
+/** the dir under its hc-webui name, or under the legacy names while only those exist */
 function ownDir(parent: string): string {
+  const custom = join(parent, "hc-webui");
+  if (existsSync(custom)) return custom;
   const legacy = join(parent, "herdr-web-ui");
   const next = join(parent, "ovis");
   return existsSync(next) || !existsSync(legacy) ? next : legacy;

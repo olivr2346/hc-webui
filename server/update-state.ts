@@ -47,7 +47,7 @@ export function releaseIn(stateDir: string, directory: string): string | null {
 /** The default state dir under its name from before the rename, and under its new one. */
 export function stateDirNames(env: Record<string, string | undefined>): { legacy: string; next: string } {
   const config = env["XDG_CONFIG_HOME"] || join(homedir(), ".config");
-  return { legacy: join(config, "herdr-web-ui"), next: join(config, "ovis") };
+  return { legacy: join(config, "ovis"), next: join(config, "hc-webui") };
 }
 
 const isDir = (path: string): boolean => {

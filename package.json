@@ -1,13 +1,13 @@
 {
-  "name": "ovis",
+  "name": "hc-webui",
   "private": true,
   "version": "0.4.22",
   "type": "module",
-  "description": "Ovis, the browser and phone client for herdr - live herdr workspaces, panes and agents in a web UI",
+  "description": "hc-webui - Web and mobile client for herdr-core and herdr (fork of ovis)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/devswha/ovis.git"
+    "url": "git+https://github.com/olivr2346/hc-webui.git"
   },
   "scripts": {
     "dev": "bun --bun vite",

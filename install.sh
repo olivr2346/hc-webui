@@ -28,7 +28,7 @@
 #   OVIS_TAILSCALE_HTTPS_PORT=<port>   serve the app on that HTTPS port only, keeping 443 free
 set -eu
 
-REPO="devswha/ovis"
+REPO="olivr2346/hc-webui"
 PLUGIN="devswha.ovis"
 # the id before the rename: an install under it moves to PLUGIN, keeping its config
 LEGACY_PLUGIN="devswha.herdr-web-ui"
@@ -36,9 +36,9 @@ BIN_DIR="$HOME/.local/bin"
 NODE_DIR="$HOME/.local/share/ovis/node"
 # where an install from before the rename put it
 LEGACY_NODE_DIR="$HOME/.local/share/herdr-web-ui/node"
-# Ovis on herdr-core: its checkout, and the user service that starts it at login
-APP_DIR="$HOME/.local/share/ovis/app"
-SERVICE="ovis"
+# hc-webui on herdr-core: its checkout, and the user service that starts it at login
+APP_DIR="${APP_DIR:-$HOME/.local/share/hc-webui}"
+SERVICE="hc-webui"
 AGENT_LABEL="sh.ovis.server"
 # Official digests from nodejs.org/dist/v22.23.2/SHASUMS256.txt, as scripts/build-remote-bundle.ts pins them
 NODE_VERSION="v22.23.2"
@@ -383,12 +383,14 @@ is_core() {
   [ "$core_status" = 0 ] && [ "$core_answer" = yes ]
 }
 
-# The folders of Ovis on herdr-core, in $settings_dir and $state_dir: under the Ovis name, or the name
-# before the rename while only that one exists (as scripts/plugin.ts picks them).
+# The folders of hc-webui on herdr-core, in $settings_dir and $state_dir: under the hc-webui name, or legacy names
+# while only those exist (as scripts/plugin.ts picks them).
 core_dirs() {
-  settings_dir="$HOME/.config/ovis"
+  settings_dir="$HOME/.config/hc-webui"
+  [ -d "$settings_dir" ] || [ ! -d "$HOME/.config/ovis" ] || settings_dir="$HOME/.config/ovis"
   [ -d "$settings_dir" ] || [ ! -d "$HOME/.config/herdr-web-ui" ] || settings_dir="$HOME/.config/herdr-web-ui"
-  state_dir="$HOME/.local/state/ovis"
+  state_dir="$HOME/.local/state/hc-webui"
+  [ -d "$state_dir" ] || [ ! -d "$HOME/.local/state/ovis" ] || state_dir="$HOME/.local/state/ovis"
   [ -d "$state_dir" ] || [ ! -d "$HOME/.local/state/herdr-web-ui" ] || state_dir="$HOME/.local/state/herdr-web-ui"
 }
 
@@ -530,12 +532,13 @@ EOF
     # oneshot that stays active: the server the start leaves running stays in the unit, and stop ends it
     cat >"$unit" <<EOF
 [Unit]
-Description=Ovis on herdr-core
+Description=hc-webui on herdr-core
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 Environment="PATH=$(unit_text "$PATH")"
+Environment="OVIS_STATE_DIR=$(unit_text "$settings_dir")"
 Environment="HERDR_PLUGIN_CONFIG_DIR=$(unit_text "$settings_dir")"
 Environment="HERDR_PLUGIN_STATE_DIR=$(unit_text "$state_dir")"
 ExecStart="$(unit_text "$bun_bin" exec)" "$(unit_text "$APP_DIR/scripts/plugin.ts" exec)" start
@@ -567,7 +570,7 @@ install_core() {
   elif [ -e "$APP_DIR" ]; then
     fail "$APP_DIR is there but is not an Ovis checkout; move it away and run this again"
   else
-    ref=${OVIS_REF:-${HERDR_WEB_UI_REF:-$(latest_release)}}
+    ref=${OVIS_REF:-${HERDR_WEB_UI_REF:-main}}
     [ -n "$ref" ] || fail "could not look up the latest release on github.com. Check the connection and run this again."
     say "found herdr-core ($core), so Ovis runs on it: no herdr or herdr plugin needed"
     say "installing Ovis $ref into $APP_DIR (about a minute)"
@@ -610,7 +613,7 @@ install_plugin() {
   move=1
   if ! herdr plugin list 2>/dev/null | grep -q "$PLUGIN "; then
     need git
-    ref=${OVIS_REF:-${HERDR_WEB_UI_REF:-$(latest_release)}}
+    ref=${OVIS_REF:-${HERDR_WEB_UI_REF:-main}}
     [ -n "$ref" ] || fail "could not look up the latest release on github.com. Check the connection and run this again."
     case "$(ref_plugin_id "$ref")" in
       # that release installs, runs and updates under the old id: the move waits for a release
