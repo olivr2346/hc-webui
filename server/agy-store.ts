@@ -314,7 +314,21 @@ export async function resolveAgyStore(pane: HerdrPane): Promise<AgyStore | null>
     if (owners.length !== 1) return null;
     const pid = owners[0]!.pid;
     const before = await processIdentity(pid);
-    const store = agyStoreFromLocks(await heldPaths(pid));
+    let store = agyStoreFromLocks(await heldPaths(pid));
+    if (!store && Array.isArray(owners[0]?.argv)) {
+      const argv = owners[0]!.argv;
+      const idx = argv.findIndex((arg) => arg === "--conversation" || arg === "-c");
+      const session = idx !== -1 ? argv[idx + 1] : null;
+      if (session && LOCK.test(`${session}.lock`)) {
+        const root = process.env["ANTIGRAVITY_APP_DATA_DIR"] || join(homedir(), ".gemini", "antigravity-cli");
+        const path = join(root, "brain", session, ".system_generated", "logs", "transcript_full.jsonl");
+        try {
+          if (statSync(path).isFile()) {
+            store = { root, session, path };
+          }
+        } catch { /* file missing */ }
+      }
+    }
     const after = await processIdentity(pid);
     return before && store && before.started === after?.started ? { ...store, pid, started: before.started } : null;
   } catch { return null; }
